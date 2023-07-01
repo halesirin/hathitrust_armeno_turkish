@@ -24,13 +24,13 @@ import pickle
 vars = Variables("custom.py")
 vars.AddVariables(
     ("OUTPUT_WIDTH", "", 5000),
-    ("FOLDS", "", 1),
+    ("FOLDS", "", 5),
     ("N", "", 3),
     ("RANDOM_SEED", "", 0),
     ("TRAIN_PROPORTION", "", 0.8),
     ("DEV_PROPORTION", "", 0.1),
     ("TEST_PROPORTION", "", 0.1),    
-    ("HATHITRUST_ROOT","", "/export/large_corpora/hathi_trust")
+    ("HATHITRUST_ROOT", "", "/export/large_corpora/hathi_trust")
 )
 
 env = Environment(
@@ -57,11 +57,8 @@ env = Environment(
         "TrainModel" : Builder(
             action="python scripts/train_model.py --train ${SOURCES[0]} --dev ${SOURCES[1]} --test ${SOURCES[2]} --model ${TARGETS[0]} --scores ${TARGETS[1]} --n ${N}"
         ),
-        "ApplyModel" : Builder(
-            action="python scripts/apply_model.py --model ${SOURCES[0]} --annotated ${TARGETS[0]}"
-        ),
-        "GenerateReport" : Builder(
-            action="python scripts/generate_report.py --annotated ${SOURCES[0]} --score_files ${SOURCES[1:]} --report ${TARGETS[0]}"
+        "GenerateFinalCorpus" : Builder(
+            action="python scripts/generate_final_corpus.py --to_annotate ${SOURCES[0]} --score_files ${SOURCES[1:]} --report ${TARGETS[0]} --corpus ${TARGETS[1]}"
         )
     }
 )
@@ -85,6 +82,57 @@ env = Environment(
 # variable, so they can be summarized together after each experiment runs.
 
 
-filtered = env.FilterMarc(["work/subset_TA.json"],[]) 
+armeno_turkish = env.FilterMarc(
+    ["work/subset_AT.jsonl.gz"],
+    [],
+    REGEXES=[]
+)
 
+non_armeno_turkish = env.FilterMarc(
+    ["work/subset_NAT.jsonl.gz"],
+    [],
+    REGEXES=[]
+) 
 
+labeled = env.MergeEntries(
+    ["work/labeled.jsonl.gz"],
+    [armeno_turkish, non_armeno_turkish]
+)
+
+full_labeled = env.ExpandEntries(
+    ["work/full_labeled.jsonl.gz"],
+    [labeled]
+)
+
+data_lake = env.FilterMarc(
+    ["work/data_lake.jsonl.gz"],
+    [],
+    REGEXES=[]
+)
+
+full_data_lake = env.ExpandEntries(
+    ["work/full_data_lake.jsonl.gz"],
+    [data_lake]
+)
+
+model_scores_pairs = []
+for fold in range(1, env["FOLDS"] + 1):
+    train, dev, test = env.RandomSplit(
+        ["work/${FOLD}/train.jsonl.gz", "work/${FOLD}/dev.jsonl.gz", "work/${FOLD}/test.jsonl.gz"],
+        [full_labeled],
+        FOLD=fold,
+        RANDOM_SEED=fold
+    )
+    for n in [2, 3, 4]:
+        model, scores = env.TrainModel(
+            ["work/${FOLD}/${N}/model.pkl.gz", "work/${FOLD}/${N}/scores.json"],
+            [train, dev, test],
+            N=n,
+            FOLD=fold
+        )
+        model_scores_pairs.append((model, scores))
+
+env.GenerateFinalCorpus(
+    ["work/report.txt", "work/final_corpus.jsonl.gz"],
+    [full_data_lake] + model_scores_pairs
+)
