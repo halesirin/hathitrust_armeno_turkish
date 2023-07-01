@@ -5,3 +5,5 @@ data
 *pyc
 #*
 *#
+custom.py
+.sconsign.dblite

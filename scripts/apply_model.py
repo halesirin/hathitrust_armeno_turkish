@@ -1,17 +1,8 @@
 import argparse
 
-#
-# This script does *nothing* except print out its arguments and touch any files
-# specified as outputs (thus fulfilling a build system's requirements for
-# success).
-#
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--outputs", dest="outputs", nargs="+", help="Output files")
+    parser.add_argument("--model", dest="model", help="Input file containing pickled model")
+    parser.add_argument("--annotated", dest="annotated", help="Output file for annotated data")
     args, rest = parser.parse_known_args()
-
-    print("Building files {} from arguments {}".format(args.outputs, rest))
-    for fname in args.outputs:
-        with open(fname, "wt") as ofd:
-            pass
