@@ -43,7 +43,7 @@ env = Environment(
             action="python scripts/filter_marc.py --output ${TARGETS[0]} --hathitrust_root ${HATHITRUST_ROOT}"
         ),
         "CollectionToJSON" : Builder(
-            action="python scripts/collection_to_json.py --output ${TARGETS[0]} --hathitrust_root ${HATHITRUST_ROOT}"
+            action="python scripts/collection_to_json.py --input ${SOURCES[0]} --output ${TARGETS[0]} --label ${LABEL}"
         ),
         "MergeEntries" : Builder(
             action="python scripts/merge_entries.py --inputs ${SOURCES} --output ${TARGETS[0]}"
@@ -82,15 +82,15 @@ env = Environment(
 
 
 armeno_turkish = env.CollectionToJSON(
-    ["work/True_AT_set.json"],
+    ["work/True_AT_set.json.gz"],
     ["data/True_AT.tsv.gz"],
-    REGEXES=[]
+    LABEL="True"
 )
 
 non_armeno_turkish = env.CollectionToJSON(
-    ["work/NAT_set.json"],
+    ["work/NAT_set.json.gz"],
     ["data/Non_AT.tsv.gz"],
-    REGEXES=[]
+    LABEL="False"
 ) 
 
 labeled = env.MergeEntries(
