@@ -40,10 +40,10 @@ env = Environment(
     
     BUILDERS={
         "FilterMarc" : Builder(
-            action="python scripts/filter_marc.py --outputs ${TARGETS[0]} --hathitrust_root ${HATHITRUST_ROOT}"
+            action="python scripts/filter_marc.py --output ${TARGETS[0]} --hathitrust_root ${HATHITRUST_ROOT}"
         ),
-        "FilterHathiMetadata" : Builder(
-            action="python scripts/filter_hathi_metadata.py --output ${TARGETS[0]} --hathitrust_root ${HATHITRUST_ROOT}"
+        "CollectionToJSON" : Builder(
+            action="python scripts/collection_to_json.py --output ${TARGETS[0]} --hathitrust_root ${HATHITRUST_ROOT}"
         ),
         "MergeEntries" : Builder(
             action="python scripts/merge_entries.py --inputs ${SOURCES} --output ${TARGETS[0]}"
@@ -71,7 +71,6 @@ env = Environment(
 # The basic pattern for invoking a build rule is:
 #
 #   "Rule(list_of_targets, list_of_sources, VARIABLE1=value, VARIABLE2=value...)"
-#
 # Note how variables are specified in each invocation, and their values used to fill
 # in the build commands *and* determine output filenames.  It's a very flexible system,
 # and there are ways to make it less verbose, but in this case explicit is better than
@@ -82,15 +81,15 @@ env = Environment(
 # variable, so they can be summarized together after each experiment runs.
 
 
-armeno_turkish = env.FilterMarc(
-    ["work/subset_AT.jsonl.gz"],
-    [],
+armeno_turkish = env.CollectionToJSON(
+    ["work/True_AT_set.json"],
+    ["data/True_AT.tsv.gz"],
     REGEXES=[]
 )
 
-non_armeno_turkish = env.FilterMarc(
-    ["work/subset_NAT.jsonl.gz"],
-    [],
+non_armeno_turkish = env.CollectionToJSON(
+    ["work/NAT_set.json"],
+    ["data/Non_AT.tsv.gz"],
     REGEXES=[]
 ) 
 
@@ -103,7 +102,6 @@ full_labeled = env.ExpandEntries(
     ["work/full_labeled.jsonl.gz"],
     [labeled]
 )
-
 data_lake = env.FilterMarc(
     ["work/data_lake.jsonl.gz"],
     [],
