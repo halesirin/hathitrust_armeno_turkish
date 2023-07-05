@@ -22,22 +22,18 @@ if __name__ == "__main__":
                     var_keys = subf.keys()
                     if 'u' in var_keys:
                         return (subf['u'])
-        
-        #i=0
+
     with gzip.open(args.hathitrust_root+'/full_marc.json.gz', 'rt') as fh:
         for record in fh:
-            #i+=1
-            #if i>1000000:
-        #       break
             if re.search(is_subset_rx, record, re.IGNORECASE): 
                 record_list.append(record)
                         
     with gzip.open(args.output, 'wt') as ofh:
         for line in record_list:
             j = {
-                #"htid":get_id(line),
-                "marc":json.loads(line)
-                    }   
+                "htid" : get_id(line),
+                "marc" : json.loads(line)
+            }
             ofh.write(json.dumps(j)+"\n")
                         
                 

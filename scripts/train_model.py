@@ -1,6 +1,14 @@
 import argparse
+import pickle
 import gzip
 import json
+
+def split_text(text, max_length):
+    while len(text) > max_length:
+        yield text[:max_length]
+        text = text[max_length:]
+    if len(text) > 0:
+        yield text
 
 if __name__ == "__main__":
 
@@ -11,38 +19,50 @@ if __name__ == "__main__":
     parser.add_argument("--model", dest="model", help="Output file for pickled model")
     parser.add_argument("--scores", dest="scores", help="Output file for dev scores")
     parser.add_argument("--n", dest="n", default=3, type=int, help="Value of 'n', as in 'n-gram'")
+    parser.add_argument("--max_length", dest="max_length", default=0, type=int, help="Max length of texts to evaluate on")
     args, rest = parser.parse_known_args()
 
-    # get lists of train/dev item-numbers
+    # Get lists of train/dev item-numbers
     train = []
     dev = []
 
-    # initialize model
-    model = {
-        "armeno-turkish" : None,
-        "non-armeno-turkish" : None
-    }
+    with gzip.open(args.train, "rt") as ifd:
+        for line in ifd:
+            train.append(json.loads(line))
 
-    # train model and get dev instances
+    with gzip.open(args.dev, "rt") as ifd:
+        for line in ifd:
+            dev.append(json.loads(line))            
+
+    models = {}
+
+    # Train model and get dev instances
     devs = []
     with gzip.open(args.data, "rt") as ifd:
         for i, line in enumerate(ifd):
            j = json.loads(line)
            if i in train:
-               # add counts from j["contents"] to the appropriate (sub)model
+               label = j["label"]
+               # Initialize model for this label if one doesn't exist yet
+               # models[label] = models.get(label, None)
+               
+               # Add counts from j["contents"] to the model[label]
+               # ...
                pass
            elif i in dev:
                devs.append(j)
     
-    # apply model
+    # Apply models to (chunks of) dev
     guesses = []
     golds = []
     for j in devs:
-        # apply both sub-models to j["content"], whichever is more likely is the "guess"
+        gold = j["label"]
+        # Apply models to j["content"], whichever is more likely is the "guess"
         #
-        # guesses.append(guess)
-        # golds.append(gold)
-        pass
+        for chunk in (j["content"] if args.max_length == 0 else split_text(j["content"], args.max_length)):
+            # guesses.append(guess)
+            golds.append(gold)
+            pass
 
     # compute scores
     scores = {
@@ -51,9 +71,8 @@ if __name__ == "__main__":
 
     # save model
     with gzip.open(args.model, "wb") as ofd:
-        ofd.write(pickle.dumps(model))
+        ofd.write(pickle.dumps(models))
 
     # save scores
     with gzip.open(args.scores, "wb") as ofd:
         ofd.write(pickle.dumps(scores))
-    
