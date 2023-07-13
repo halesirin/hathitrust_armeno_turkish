@@ -55,8 +55,9 @@ env = Environment(
             action="python scripts/random_split.py --input ${SOURCES[0]} --outputs ${TARGETS} --proportions ${TRAIN_PROPORTION} ${DEV_PROPORTION} ${TEST_PROPORTION} --random_seed ${RANDOM_SEED}"
         ),
         "TrainModel" : Builder(
-            action="python scripts/train_model.py --data ${SOURCES[0]} --train ${SOURCES[1]} --dev ${SOURCES[2]} --model ${TARGETS[0]} --scores ${TARGETS[1]} --n ${N}"
-        ),
+	    action="python scripts/train_model.py --input ${SOURCES[0]} --model ${TARGETS[0]} --scores ${TARGETS[1]}"
+	),
+#           action="python scripts/train_model.py --data ${SOURCES[0]} --train ${SOURCES[1]} --dev ${SOURCES[2]} --model ${TARGETS[0]} --scores ${TARGETS[1]} --n ${N}"
         "GenerateFinalCorpus" : Builder(
             action="python scripts/generate_final_corpus.py --to_annotate ${SOURCES[0]} --score_files ${SOURCES[1:]} --report ${TARGETS[0]} --corpus ${TARGETS[1]}"
         )
@@ -90,30 +91,41 @@ data_lake = env.FilterMarc(
     REGEXES=[]
 )
 
+model, scores = env.TrainModel(
+    ["work/model.pk1.gz", "work/scores.json"],
+    [labeled_with_content]
+)
+    
 #data_lake_with_content = env.ExpandEntries(
 #   ["work/data_lake_with_content.jsonl.gz"],
 #   [data_lake]
 #)
 
-model_scores_pairs = []
-for fold in range(1, env["FOLDS"] + 1):
-    train, dev, test = env.RandomSplit(
-        ["work/${FOLD}/train.jsonl.gz", "work/${FOLD}/dev.jsonl.gz", "work/${FOLD}/test.jsonl.gz"],
-        [labeled_with_content],
-        FOLD=fold,
-        RANDOM_SEED=fold
-    )
-    for n in [2, 3, 4]:
-        model, scores = env.TrainModel(
-            ["work/${FOLD}/${N}/model.pkl.gz", "work/${FOLD}/${N}/scores.json"],
-            [labeled_with_content, train, dev],
-            N=n,
-            FOLD=fold
-        )
-        model_scores_pairs.append((model, scores))
+
+
+
+
+
+
+#model_scores_pairs = []
+#for fold in range(1, env["FOLDS"] + 1):
+#   train, dev, test = env.RandomSplit(
+#      ["work/${FOLD}/train.jsonl.gz", "work/${FOLD}/dev.jsonl.gz", "work/${FOLD}/test.jsonl.gz"],
+#      [labeled_with_content],
+#      FOLD=fold,
+#      RANDOM_SEED=fold
+#   )
+#   for n in [2, 3, 4]:
+#       model, scores = env.TrainModel(
+#           ["work/${FOLD}/${N}/model.pkl.gz", "work/${FOLD}/${N}/scores.json"],
+#           [labeled_with_content, train, dev],
+#           N=n,
+#           FOLD=fold
+#       )
+#       model_scores_pairs.append((model, scores))
     
 
 #env.GenerateFinalCorpus(
 #    ["work/report.txt", "work/final_corpus.jsonl.gz"],
 #    [data_lake_with_content] + model_scores_pairs
-#)
+#    )
