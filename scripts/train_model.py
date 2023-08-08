@@ -16,8 +16,10 @@ if __name__ == "__main__":
     parser.add_argument("--model", dest="model", help="Output file for pickled model")
     parser.add_argument("--scores", dest="scores", help="Output file for scores") 
     parser.add_argument("--input", dest="input", help="Input file")
+    parser.add_argument("--vectorizer", dest="vectorizer", help="Output file for vectorizer")
 #   parser.add_argument("--output", dest="output", help="Output file")
     args, rest = parser.parse_known_args()
+
     
 #Creating content, label and title lists
 X = []
@@ -73,6 +75,10 @@ with gzip.open(args.model, "wb") as ofd:
 with open(args.scores, "wb") as ofd:
    ofd.write(pickle.dumps(metrics))
 
+#saving the vectorizer
+with gzip.open(args.vectorizer, "wb") as ofd:
+    ofd.write(pickle.dumps(cv))
+    
 """
 def split_text(text, max_length):
     while len(text) > max_length:
